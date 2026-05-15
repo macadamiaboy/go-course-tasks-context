@@ -60,26 +60,44 @@ import (
 
 // TODO: напиши функцию checkService(ctx context.Context, name string, wg *sync.WaitGroup)
 // Подсказка:
-//   delay := time.Duration(100+rand.Intn(500)) * time.Millisecond
-//   select {
-//   case <-time.After(delay):
-//       // успех
-//   case <-ctx.Done():
-//       // таймаут
-//   }
+//
+//	delay := time.Duration(100+rand.Intn(500)) * time.Millisecond
+//	select {
+//	case <-time.After(delay):
+//	    // успех
+//	case <-ctx.Done():
+//	    // таймаут
+//	}
+func checkService(ctx context.Context, name string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	delay := time.Duration(100+rand.Intn(500)) * time.Millisecond
+
+	select {
+	case <-ctx.Done():
+		fmt.Printf("%s: проверка отменена (таймаут)\n", name)
+	case <-time.After(delay):
+		fmt.Printf("%s: OK\n", name)
+	}
+}
 
 func main() {
 	services := []string{"users", "orders", "payments", "inventory", "notifications"}
 
 	// TODO: создай контекст с таймаутом 300мс
-	// TODO: создай WaitGroup локально
-	// TODO: запусти checkService для каждого сервиса
-	// TODO: wg.Wait() и выведи "проверка завершена"
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
 
-	_ = services
-	_ = context.Background
-	_ = fmt.Println
-	_ = rand.Intn
-	_ = sync.WaitGroup{}
-	_ = time.Second
+	// TODO: создай WaitGroup локально
+	var wg sync.WaitGroup
+
+	// TODO: запусти checkService для каждого сервиса
+	for _, service := range services {
+		wg.Add(1)
+		go checkService(ctx, service, &wg)
+	}
+
+	// TODO: wg.Wait() и выведи "проверка завершена"
+	wg.Wait()
+	fmt.Println("проверка завершена")
 }

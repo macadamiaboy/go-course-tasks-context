@@ -47,16 +47,49 @@ import (
 	"time"
 )
 
+func timeTrack() func() {
+	start := time.Now()
+	return func() {
+		fmt.Println("за", time.Since(start))
+	}
+}
+
 // TODO: напиши функцию downloadFile(ctx context.Context, url string) (string, error)
+func downloadFile(ctx context.Context, url string) (string, error) {
+	start := time.Now()
+	defer func() {
+		fmt.Printf("за %v ", time.Since(start))
+	}()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case <-time.After(2 * time.Second):
+		return fmt.Sprint("содержимое ", url), nil
+	}
+}
 
 func main() {
 	// Вызов 1: таймаут 3 секунды - должен успеть
 	// TODO: создай контекст с таймаутом 3s, вызови downloadFile, выведи результат
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	res, err := downloadFile(ctx, "https://example.com/file.txt")
+	if err != nil {
+		fmt.Printf("ошибка: %s\n", err)
+	} else {
+		fmt.Printf("скачано: %s\n", res)
+	}
 
 	// Вызов 2: таймаут 1 секунда - не успеет
 	// TODO: создай контекст с таймаутом 1s, вызови downloadFile, выведи ошибку
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel2()
 
-	_ = context.Background
-	_ = fmt.Println
-	_ = time.Second
+	res, err = downloadFile(ctx2, "https://example.com/file.txt")
+	if err != nil {
+		fmt.Println("ошибка:", err)
+	} else {
+		fmt.Println("скачано:", res)
+	}
 }
